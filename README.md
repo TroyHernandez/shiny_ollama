@@ -42,8 +42,8 @@ then start up the shiny server:
 
 `shiny::shinyAppFile(appFile = "shiny_ollama.R", options = list(host = "192.168.1.xxx", port = 3838))`
 
-*To find your ip address, open your terminal and type ifconfig. Look for the inet address under your active network connection (often en0 or en1).
+*To find your ip address, open your terminal and type `ifconfig`. Look for the inet address under your active network connection.*
 
-Currently working on my Ubuntu with Firefox, but not Chrome ¯\_(ツ)_/¯*
+*Currently working with Firefox, Safari, Edge, but not Chrome* ¯\\\_(ツ)_/¯
 
 **Thanks to @tolgakurtuluss for building the initial chatGPT Shiny app.**
