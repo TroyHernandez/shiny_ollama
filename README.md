@@ -24,7 +24,7 @@ Alternatively you could pull the model yourself using:
 
 # Interface
 
-![](https://github.com/troyhernandez/shiny_ollama/blob/uiexample.png)
+![](https://raw.githubusercontent.com/TroyHernandez/shiny_ollama/main/uiexample.png)
 
 # Features
 
