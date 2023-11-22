@@ -1,31 +1,32 @@
 library(shiny)
 library(httr)
 library(stringr)
+library(jsonlite)
 
 ui <- fluidPage(
   div(
-    titlePanel("ChatGPT Clone with Shiny"),
+    titlePanel("ollama with Shiny"),
     style = "color: white; background-color: #3d3f4e"
   ),
   sidebarLayout(
     sidebarPanel(
-      h3("Welcome to the OpenAI Playground - ChatGPT Clone with Shiny!"),
-      p("This application allows you to chat with an OpenAI GPT model and explore its capabilities. Simply use your own API keys with adding below."),
-      textInput("api_key", "API Key", "sk-PLACEYOUROWNAPIKEYHERE"),
-      tags$p("Find your own OpenAI API:", 
-             tags$a(href = "https://platform.openai.com/account/api-keys", target="_blank", "https://platform.openai.com/account/api-keys")
-      ),tags$hr(),
+      h3("Welcome to ollama!"),
+      # p("This application allows you to chat with an OpenAI GPT model and explore its capabilities. Simply use your own API keys with adding below."),
+      # textInput("api_key", "API Key", "sk-PLACEYOUROWNAPIKEYHERE"),
+      # tags$p("Find your own OpenAI API:", 
+      #        tags$a(href = "https://platform.openai.com/account/api-keys", target="_blank", "https://platform.openai.com/account/api-keys")
+      # ),tags$hr(),
       selectInput("model_name", "Model Name",
-                  choices = c("gpt-4", "gpt-4-0314", "gpt-3.5-turbo-0301", "gpt-3.5-turbo"), selected = "gpt-3.5-turbo"),
+                  choices = c("llama2", "llama2-uncensored", "codellama", "samantha-mistral"), selected = "llama2"),
       tags$hr(),
       sliderInput("temperature", "Temperature", min = 0.1, max = 1.0, value = 0.7, step = 0.1),
-      sliderInput("max_length", "Maximum Length", min = 1, max = 2048, value = 512, step = 1),
+      # sliderInput("max_length", "Maximum Length", min = 1, max = 2048, value = 512, step = 1),
       tags$hr(),
-      textAreaInput(inputId = "sysprompt", label = "SYSTEM PROMPT",height = "200px", placeholder = "You are a helpful assistant."),
+      textAreaInput(inputId = "sysprompt", label = "SYSTEM PROMPT", height = "200px", value = "You are a helpful assistant."),
       tags$hr(),
       tags$div(
         style="text-align:center; margin-top: 15px; color: white; background-color: #FFFFFF",
-        a(href="https://github.com/tolgakurtuluss/shinychatgpt", target="_blank",
+        a(href="https://github.com/TroyHernandez/shinychatgpt", target="_blank",
           img(src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", height="30px"),
           "View source code on Github"
         )
@@ -54,33 +55,33 @@ server <- function(input, output, session) {
       new_data <- data.frame(source = "User", message = input$user_message, stringsAsFactors = FALSE)
       chat_data(rbind(chat_data(), new_data))
       
-      gpt_res <- call_gpt_api(input$api_key, input$user_message, input$model_name, input$temperature, input$max_length, input$sysprompt)
+      gpt_res <- call_ollama_api(prompt = input$user_message,
+                                 model_name = input$model_name,
+                                 temperature = input$temperature,
+                                 max_length = input$max_length,
+                                 sysprompt = input$sysprompt)
       
       if (!is.null(gpt_res)) {
-        gpt_data <- data.frame(source = "ChatGPT", message = gpt_res, stringsAsFactors = FALSE)
+        gpt_data <- data.frame(source = "LlamaGPT", message = gpt_res, stringsAsFactors = FALSE)
         chat_data(rbind(chat_data(), gpt_data))
       }
       updateTextInput(session, "user_message", value = "")
     }
   })
   
-  call_gpt_api <- function(api_key, prompt, model_name, temperature, max_length, sysprompt) {
+  call_ollama_api <- function(prompt, model_name, temperature, max_length, sysprompt) {
+    json_payload <- paste0('{"model": "', model_name,
+                           '", "prompt": "', prompt,
+                           '", "system": "', sysprompt,
+                           '", "stream": false, "options": {"temperature": ', temperature,
+                           ', "num_predict": ', max_length, '}}')
+    
     response <- httr::POST(
-      url = "https://api.openai.com/v1/chat/completions", 
-      add_headers(Authorization = paste("Bearer", api_key)),
-      content_type("application/json"),
-      encode = "json",
-      body = list(
-        model = model_name,
-        messages = list(
-          list(role = "user", content = prompt),
-          list(role = "system", content = sysprompt)
-        ),
-        temperature = temperature,
-        max_tokens = max_length
-      )
+      url = "http://localhost:11434/api/generate",
+      body = json_payload,
+      encode = "json"
     )
-    return(str_trim(content(response)$choices[[1]]$message$content))
+    return(str_trim(content(response)$response))
   }
   
   output$chat_history <- renderUI({
