@@ -9,6 +9,7 @@ model_list <- read.table(text = system("ollama list", intern = TRUE),
 # tabs at the end of each model row adds an additional empty column
 model_list$MODIFIED <- NULL
 colnames(model_list) <- c("NAME", "ID", "SIZE", "MODIFIED")
+model_list$NAME <- trimws(model_list$NAME)
 
 ui <- fluidPage(
   div(
@@ -24,9 +25,11 @@ ui <- fluidPage(
       #        tags$a(href = "https://platform.openai.com/account/api-keys", target="_blank", "https://platform.openai.com/account/api-keys")
       # ),tags$hr(),
       selectInput("model_name", "Model Name",
-                  choices = c("llama2", "llama2-uncensored", "codellama",
-                              "medllama2", "orca-mini", "mistral",
-                              "samantha-mistral", "orca-mini:3b"), selected = "llama2"),
+                  choices = c("llama2:latest", "llama2-uncensored:latest",
+                              "codellama:latest",
+                              "medllama2:latest", "orca-mini:latest",
+                              "mistral:latest", "samantha-mistral:latest",
+                              "orca-mini:3b"), selected = "llama2:latest"),
       tags$hr(),
       sliderInput("temperature", "Temperature", min = 0.1, max = 1.0, value = 0.7, step = 0.1),
       sliderInput("max_length", "Maximum Length", min = 1, max = 2048, value = 512, step = 1),
@@ -61,13 +64,15 @@ server <- function(input, output, session) {
   
   # Download model if not present
   observeEvent(input$model_name, {
-    if(!(paste0(input$model_name, ":latest") %in% model_list$NAME)){
+    if(!(input$model_name %in% model_list$NAME)){
       system(paste0("ollama pull ", input$model_name))
+      # Update model list
       model_list <- read.table(text = system("ollama list", intern = TRUE),
                                sep = "\t", row.names = NULL)
       # tabs at the end of each model row adds an additional empty column
       model_list$MODIFIED <- NULL
       colnames(model_list) <- c("NAME", "ID", "SIZE", "MODIFIED")
+      model_list$NAME <- trimws(model_list$NAME)
     }
   })
   
