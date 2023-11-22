@@ -24,11 +24,12 @@ Alternatively you could pull the model yourself using:
 
 # Interface
 
-![](https://github.com/troyhernandez/shiny_ollama/blob/34adb39f58ac58d0d4fc5d0b8fc080b75f72256f/uiexample.png)
+![](https://github.com/troyhernandez/shiny_ollama/blob/uiexample.png)
 
 # Features
 
-* Model selection: Users can select from different models, such as "gpt-4", "gpt-4-0314", "gpt-3.5-turbo-0301", and "gpt-3.5-turbo". Each model has different capabilities and response times.
+* Model selection: Users can select from different models, such as "llama2", "mistral", "orca-mini", and "codellama". Each model has different capabilities and response times.
 
-# Try it on shinyapps.io 🚀
-[shinychatgpt / shinyapps.io](https://tolgakurtuluss.shinyapps.io/shinychatgpt/)
+# Try it locally! 🚀
+
+Thanks to @tolgakurtuluss for building the initial chatGPT Shiny app.
