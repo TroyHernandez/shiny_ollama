@@ -3,6 +3,13 @@ library(httr)
 library(stringr)
 library(jsonlite)
 
+
+model_list <- read.table(text = system("ollama list", intern = TRUE),
+                         sep = "\t", row.names = NULL)
+# tabs at the end of each model row adds an additional empty column
+model_list$MODIFIED <- NULL
+colnames(model_list) <- c("NAME", "ID", "SIZE", "MODIFIED")
+
 ui <- fluidPage(
   div(
     titlePanel("ollama with Shiny"),
@@ -17,10 +24,12 @@ ui <- fluidPage(
       #        tags$a(href = "https://platform.openai.com/account/api-keys", target="_blank", "https://platform.openai.com/account/api-keys")
       # ),tags$hr(),
       selectInput("model_name", "Model Name",
-                  choices = c("llama2", "llama2-uncensored", "codellama", "samantha-mistral"), selected = "llama2"),
+                  choices = c("llama2", "llama2-uncensored", "codellama",
+                              "medllama2", "orca-mini", "mistral",
+                              "samantha-mistral", "orca-mini:3b"), selected = "llama2"),
       tags$hr(),
       sliderInput("temperature", "Temperature", min = 0.1, max = 1.0, value = 0.7, step = 0.1),
-      # sliderInput("max_length", "Maximum Length", min = 1, max = 2048, value = 512, step = 1),
+      sliderInput("max_length", "Maximum Length", min = 1, max = 2048, value = 512, step = 1),
       tags$hr(),
       textAreaInput(inputId = "sysprompt", label = "SYSTEM PROMPT", height = "200px", value = "You are a helpful assistant."),
       tags$hr(),
@@ -50,6 +59,18 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   chat_data <- reactiveVal(data.frame())
   
+  # Download model if not present
+  observeEvent(input$model_name, {
+    if(!(paste0(input$model_name, ":latest") %in% model_list$NAME)){
+      system(paste0("ollama pull ", input$model_name))
+      model_list <- read.table(text = system("ollama list", intern = TRUE),
+                               sep = "\t", row.names = NULL)
+      # tabs at the end of each model row adds an additional empty column
+      model_list$MODIFIED <- NULL
+      colnames(model_list) <- c("NAME", "ID", "SIZE", "MODIFIED")
+    }
+  })
+  
   observeEvent(input$send_message, {
     if (input$user_message != "") {
       new_data <- data.frame(source = "User", message = input$user_message, stringsAsFactors = FALSE)
@@ -62,7 +83,7 @@ server <- function(input, output, session) {
                                  sysprompt = input$sysprompt)
       
       if (!is.null(gpt_res)) {
-        gpt_data <- data.frame(source = "LlamaGPT", message = gpt_res, stringsAsFactors = FALSE)
+        gpt_data <- data.frame(source = "ollama", message = gpt_res, stringsAsFactors = FALSE)
         chat_data(rbind(chat_data(), gpt_data))
       }
       updateTextInput(session, "user_message", value = "")
@@ -87,7 +108,7 @@ server <- function(input, output, session) {
   output$chat_history <- renderUI({
     chatBox <- lapply(1:nrow(chat_data()), function(i) {
       tags$div(class = ifelse(chat_data()[i, "source"] == "User", "alert alert-secondary", "alert alert-success"),
-               HTML(paste0("<b>", chat_data()[i, "source"], ":</b> ", chat_data()[i, "message"])))
+               HTML(paste0("<b>", chat_data()[i, "source"], ":</b> ", text = chat_data()[i, "message"])))
     })
     do.call(tagList, chatBox)
   })
