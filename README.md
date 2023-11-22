@@ -32,4 +32,12 @@ Alternatively you could pull the model yourself using:
 
 # Try it locally! 🚀
 
+Serve on your local network (unsecured) and access it at 192.168.1.xxx:3838 with (where 192.168.1.xxx is replaced with your actual ip address):
+
+`shiny::shinyAppFile(appFile = "shiny_ollama.R", options = list(host = "192.168.1.xxx", port = 3838))`
+
+*To find your ip address, open your terminal and type ifconfig. Look for the inet address under your active network connection (often en0 or en1).*
+
+**Currently working on my Ubuntu with Firefox, but not Chrome ¯\_(ツ)_/¯**
+
 Thanks to @tolgakurtuluss for building the initial chatGPT Shiny app.
