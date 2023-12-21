@@ -1,5 +1,5 @@
 library(shiny)
-library(httr)
+library(curl)
 library(stringr)
 library(jsonlite)
 
@@ -75,40 +75,45 @@ server <- function(input, output, session) {
       model_list$NAME <- trimws(model_list$NAME)
     }
   })
-  
+
+  call_api_with_curl <- function(json_payload) {
+    h <- new_handle()
+    handle_setopt(h, copypostfields = json_payload)
+    handle_setheaders(h,
+                      "Content-Type" = "application/json",
+                      "Accept" = "application/json")
+    response <- curl_fetch_memory("http://localhost:11434/api/generate", handle = h)
+    # Parse the response
+    parsed_response <- fromJSON(rawToChar(response$content))
+    return(str_trim(parsed_response$response))
+  }
+
+  call_ollama_api <- function(prompt, model_name, temperature, max_length, sysprompt) {
+    data_list <- list(model = model_name, prompt = prompt, system = sysprompt,
+                      stream = FALSE,
+                      options = list(temperature = temperature,
+                                     num_predict = max_length))
+    json_payload <- toJSON(data_list, auto_unbox = TRUE)
+    call_api_with_curl(json_payload)
+  }
+
   observeEvent(input$send_message, {
     if (input$user_message != "") {
       new_data <- data.frame(source = "User", message = input$user_message, stringsAsFactors = FALSE)
       chat_data(rbind(chat_data(), new_data))
-      
       gpt_res <- call_ollama_api(prompt = input$user_message,
                                  model_name = input$model_name,
                                  temperature = input$temperature,
                                  max_length = input$max_length,
                                  sysprompt = input$sysprompt)
-      
       if (!is.null(gpt_res)) {
         gpt_data <- data.frame(source = "ollama", message = gpt_res, stringsAsFactors = FALSE)
         chat_data(rbind(chat_data(), gpt_data))
       }
+      
       updateTextInput(session, "user_message", value = "")
     }
   })
-  
-  call_ollama_api <- function(prompt, model_name, temperature, max_length, sysprompt) {
-    json_payload <- paste0('{"model": "', model_name,
-                           '", "prompt": "', prompt,
-                           '", "system": "', sysprompt,
-                           '", "stream": false, "options": {"temperature": ', temperature,
-                           ', "num_predict": ', max_length, '}}')
-    
-    response <- httr::POST(
-      url = "http://localhost:11434/api/generate",
-      body = json_payload,
-      encode = "json"
-    )
-    return(str_trim(content(response)$response))
-  }
   
   output$chat_history <- renderUI({
     chatBox <- lapply(1:nrow(chat_data()), function(i) {
