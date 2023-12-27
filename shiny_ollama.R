@@ -1,6 +1,5 @@
 library(shiny)
 library(curl)
-library(stringr)
 library(jsonlite)
 
 
@@ -56,7 +55,7 @@ ui <- fluidPage(
       fluidRow(
         column(11,textAreaInput(inputId = "user_message", placeholder = "Enter your message:", label="USER PROMPT", width = "100%")),
         column(1,actionButton("send_message", "Send",icon = icon("play"),height = "350px"))
-      ),style = "background-color: #00A67E")
+      ),style = "background-color: #3d3f4e")
   ),style = "background-color: #3d3f4e")
 
 server <- function(input, output, session) {
@@ -85,7 +84,7 @@ server <- function(input, output, session) {
     response <- curl_fetch_memory("http://localhost:11434/api/generate", handle = h)
     # Parse the response
     parsed_response <- fromJSON(rawToChar(response$content))
-    return(str_trim(parsed_response$response))
+    return(trimws(parsed_response$response))
   }
 
   call_ollama_api <- function(prompt, model_name, temperature, max_length, sysprompt) {
